@@ -1,0 +1,19 @@
+{
+    "name": "istimer/Nroute",
+    "description": "a slim plugin",
+    "keywords": ["slim", "route", "router"],
+    "homepage": "http://php.istimer.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "wuxin",
+            "email": "opdss@qq.com",
+            "homepage": "http://php.istimer.com/"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Opdss\\Nroute": "./"
+        }
+    }
+}
