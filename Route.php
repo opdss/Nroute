@@ -5,7 +5,7 @@
  * @date 2018/1/30 16:24
  * @copyright istimer.com
  */
- namespace App\Libraries\Nroute;
+ namespace Opdss\Nroute;
 
  class Route
  {

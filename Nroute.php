@@ -5,7 +5,7 @@
  * @date 2018/1/30 12:27
  * @copyright istimer.com
  */
-namespace App\Libraries\Nroute;
+namespace Opdss\Nroute;
 
 use Slim\App;
 

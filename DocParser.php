@@ -5,7 +5,7 @@
  * @date 2018/1/30 12:06
  * @copyright istimer.com
  */
-namespace App\Libraries\Nroute;
+namespace Opdss\Nroute;
 
 class DocParser {
 

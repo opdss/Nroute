@@ -11,6 +11,10 @@
             "homepage": "http://php.istimer.com/"
         }
     ],
+    "require": {
+        "php": ">=5.5.0",
+        "slim/slim": "^3.1"
+    },
     "autoload": {
         "psr-4": {
             "Opdss\\Nroute\\": "./"

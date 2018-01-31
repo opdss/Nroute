@@ -41,7 +41,7 @@ class User
 
 ```
 $config = array('cacheDir'=>CACHE_DIR, 'forceUseCache'=> true);
-\App\Libraries\Nroute\Nroute::factory($config)->register($app, array(APP_DIR . 'Controllers' => 'App\\Controllers'));
+\Opdss\Nroute\Nroute::factory($config)->register($app, array(APP_DIR . 'Controllers' => 'App\\Controllers'));
 ```
 
 /users 路由就会自动读取注册了
