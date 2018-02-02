@@ -123,9 +123,9 @@ class Nroute
 	public function injection(App $app, array $routes)
 	{
 		foreach ($routes as $route) {
-			$r = $app->map($route->methods, $route->pattern, $route->callable)->setName($route->name);
-			if (!empty($route->middleware)) {
-				foreach ($route->middleware as $middleware) {
+			$r = $app->map($route['methods'], $route['pattern'], $route['callable'])->setName($route['name']);
+			if (!empty($route['middleware'])) {
+				foreach ($route['middleware'] as $middleware) {
 					class_exists($middleware) AND $r->add($middleware);
 				}
 			}
@@ -187,14 +187,15 @@ class Nroute
 				//没有设置匹配路由的话，直接抛弃
 				if (!$pattern) continue;
 				$middleware = $methodDoc->getParam($this->middleware) ?: $classDoc->getParam($this->middleware) ?: array();
-				$r = new Route();
-				$r->title = $methodDoc->getShortDesc();
-				$r->description = $methodDoc->getDesc();
-				$r->pattern = $pattern;
-				$r->methods = $methodDoc->getParam($this->method) ?: array('get'); //默认get
-				$r->callable = $className . ':' . $method->getName();
-				$r->name = $methodDoc->getParam($this->name) ?: implode($this->dash, explode(DIRECTORY_SEPARATOR, $_file.DIRECTORY_SEPARATOR.$method->name));
-				$r->middleware = $middleware;
+				$r = array(
+					'title' => $methodDoc->getShortDesc(),
+					'description' => $methodDoc->getDesc(),
+					'pattern' => $pattern,
+					'methods' => $methodDoc->getParam($this->method) ?: array('get'), //默认get
+					'callable' => $className . ':' . $method->getName(),
+					'name' => $methodDoc->getParam($this->name) ?: implode($this->dash, explode(DIRECTORY_SEPARATOR, $_file.DIRECTORY_SEPARATOR.$method->name)),
+					'middleware' => $middleware,
+				);
 				$data[] = $r;
 			}
 
