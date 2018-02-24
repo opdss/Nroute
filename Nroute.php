@@ -193,7 +193,7 @@ class Nroute
 					'pattern' => $pattern,
 					'methods' => $methodDoc->getParam($this->method) ?: array('get'), //默认get
 					'callable' => $className . ':' . $method->getName(),
-					'name' => $methodDoc->getParam($this->name) ?: implode($this->dash, explode(DIRECTORY_SEPARATOR, $_file.DIRECTORY_SEPARATOR.$method->name)),
+					'name' => $methodDoc->getParam($this->name) ?: strtolower(implode($this->dash, explode(DIRECTORY_SEPARATOR, $_file.DIRECTORY_SEPARATOR.$method->name))),
 					'middleware' => $middleware,
 				);
 				$data[] = $r;
