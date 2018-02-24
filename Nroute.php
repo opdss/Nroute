@@ -154,9 +154,10 @@ class Nroute
 		$ctrlDir = rtrim($ctrlDir, DIRECTORY_SEPARATOR);
 		$namespace = rtrim($namespace, '\\');
 
+		//设置了缓存目录的话，优先读取缓存
 		if ($this->cacheDir) {
 			$cache = $this->cacheDir.$this->cachePre.md5($ctrlDir. $namespace);
-			if ($cache && !self::isModify($ctrlDir, $this->cacheDir)) {
+			if (file_exists($cache) && !self::isModify($ctrlDir, $this->cacheDir)) {
 				return unserialize(file_get_contents($cache));
 			}
 		}
@@ -198,10 +199,10 @@ class Nroute
 				);
 				$data[] = $r;
 			}
-
-			if ($this->cacheDir) {
-				file_put_contents($cache, serialize($data));
-			}
+		}
+		//写入缓存缓存
+		if ($this->cacheDir) {
+			file_put_contents($cache, serialize($data));
 		}
 		return $data;
 	}
