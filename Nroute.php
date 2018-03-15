@@ -60,6 +60,12 @@ class Nroute
 	 */
 	private $cachePre = 'Nroute_';
 
+	/**
+	 * 附属信息，由方法@名称 取得
+	 * @var array
+	 */
+	private $sub = array();
+
 	private $_routes;
 
 	public function __construct(array $config = array())
@@ -80,6 +86,19 @@ class Nroute
 	public static function factory(array $config = array())
 	{
 		return new static($config);
+	}
+
+	/**
+	 * @param $params  string | array
+	 */
+	public function attachSub($params)
+	{
+		if (is_array($params)) {
+			$this->sub = array_merge($this->sub, $params);
+		} else {
+			array_push($this->sub, $params);
+		}
+		return $this;
 	}
 
 	/**
@@ -196,7 +215,13 @@ class Nroute
 					'callable' => $className . ':' . $method->getName(),
 					'name' => $methodDoc->getParam($this->name) ?: strtolower(implode($this->dash, explode(DIRECTORY_SEPARATOR, $_file.DIRECTORY_SEPARATOR.$method->name))),
 					'middleware' => $middleware,
+					'subInfo' => []
 				);
+				if (!empty($this->sub)) {
+					foreach ($this->sub as $sub) {
+						$r['subInfo'][$sub] = $methodDoc->getParam($sub);
+					}
+				}
 				$data[] = $r;
 			}
 		}
