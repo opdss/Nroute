@@ -1,7 +1,7 @@
 <?php
 /**
- * DocParser.php for Nroute.
- * @author SamWu
+ * Nroute.php for Nroute.
+ * @author 阿新 <opdss@qq.com>
  * @date 2018/1/30 12:27
  * @copyright istimer.com
  */
@@ -17,43 +17,52 @@ class Nroute
 	 * @var string
 	 */
 	private $pattern = 'pattern';
+
 	/**
 	 * 注释上的路由路由方法
 	 * 比如：@method GET|POST
 	 * @var string
 	 */
 	private $method = 'method';
+
 	/**
 	 * 注释上的路由路由中间件
 	 * @var string
 	 */
 	private $middleware = 'middleware';
+
 	/**
 	 * 注释上的路由参数分隔符号，如上面你的路由方法
 	 * @var string
 	 */
 	private $delimiter = '|';
+
 	/**
 	 * 注释上的路由名称
 	 * @var string
 	 */
 	private $name = 'name';
+
 	/**
 	 * 注释上的路由名称连接符
+	 * 如: user.article.list
 	 * @var string
 	 */
 	private $dash = '.';
+
 	/**
 	 * 缓存目录
 	 * @var string
 	 */
 	private $cacheDir = '';
+
 	/**
 	 * 强制使用缓存
 	 * 注意更新了注释路由的时候，得把缓存手动删除
 	 * @var bool
 	 */
 	private $forceUseCache = false;
+
 	/**
 	 * 缓存前缀
 	 * @var string
