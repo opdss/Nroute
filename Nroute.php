@@ -73,9 +73,11 @@ class Nroute
 	 * 附属信息，由方法@名称 取得
 	 * @var array
 	 */
-	private $sub = array();
+	private $info = array();
 
-	private $_routes;
+	private $_routes = [];
+
+	private $_maps = [];
 
 	public function __construct(array $config = array())
 	{
@@ -100,12 +102,12 @@ class Nroute
 	/**
 	 * @param $params  string | array
 	 */
-	public function attachSub($params)
+	public function attachInfo($params)
 	{
 		if (is_array($params)) {
-			$this->sub = array_merge($this->sub, $params);
+			$this->info = array_merge($this->info, $params);
 		} else {
-			array_push($this->sub, $params);
+			array_push($this->info, $params);
 		}
 		return $this;
 	}
@@ -117,30 +119,34 @@ class Nroute
 	 * @return bool
 	 * @throws \Exception
 	 */
-	public function register(App $app, $maps)
+	public function register(...$params)
 	{
-		$_routes = [];
-		if ($this->forceUseCache) {
-			if (!$this->cacheDir) {
-				throw new \Exception('未设置路由缓存目录');
-			}
-			$cacheName = $this->cacheDir . $this->cachePre.md5(serialize($maps));
-			if (file_exists($cacheName)) {
-				$_routes = unserialize(file_get_contents($cacheName));
-			} else {
-				foreach ($maps as $k => $v) {
-					$_routes = array_merge($_routes, $this->readDocRoutes($k, $v));
-				}
-				file_put_contents($cacheName, serialize($_routes));
-			}
-		} else {
-			foreach ($maps as $k => $v) {
-				$_routes = array_merge($_routes, $this->readDocRoutes($k, $v));
-			}
-		}
-		$this->_routes = $_routes;
-		return $this->injection($app, $_routes);
+		if (strlen($params) != 1) {
+            $this->_maps[$params[0]] = $params[1];
+        } else {
+            $this->_maps = $params[0];
+        }
+		return $this;
 	}
+
+	public function forceUpdate()
+    {
+        return $this;
+    }
+
+    public function test(App $app)
+    {
+        try{
+            return $this->injection($app, $this->getRoutes());
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+	public function run(App $app)
+    {
+        return $this->injection($app, $this->getRoutes());
+    }
 
 	/**
 	 * 将路由映射到slim app
@@ -166,9 +172,30 @@ class Nroute
 	 * 获取路由
 	 * @return mixed
 	 */
-	public function routes()
+	public function getRoutes($getNew = false, $upCache=false)
 	{
-		return $this->_routes;
+	    if ($getNew || empty($this->_routes)) {
+            $maps = $this->_maps;
+            if ($this->forceUseCache) {
+                if (!$this->cacheDir) {
+                    throw new \Exception('未设置路由缓存目录');
+                }
+                $cacheName = $this->cacheDir . $this->cachePre . md5(serialize($maps));
+                if (file_exists($cacheName)) {
+                    $this->_routes = unserialize(file_get_contents($cacheName));
+                } else {
+                    foreach ($maps as $k => $v) {
+                        $this->_routes[$k] = $this->readDocRoutes($k, $v);
+                    }
+                    file_put_contents($cacheName, serialize($this->_routes));
+                }
+            } else {
+                foreach ($maps as $k => $v) {
+                    $this->_routes[$k] = $this->readDocRoutes($k, $v, !$getNew);
+                }
+            }
+        }
+		return array_values($this->_routes);
 	}
 
 	/**
@@ -177,13 +204,13 @@ class Nroute
 	 * @param $namespace
 	 * @return array|mixed
 	 */
-	public function readDocRoutes($ctrlDir, $namespace)
+	public function readDocRoutes($ctrlDir, $namespace, $useCache = true)
 	{
 		$ctrlDir = rtrim($ctrlDir, DIRECTORY_SEPARATOR);
 		$namespace = rtrim($namespace, '\\');
 
 		//设置了缓存目录的话，优先读取缓存
-		if ($this->cacheDir) {
+		if ($useCache && $this->cacheDir) {
 			$cache = $this->cacheDir.$this->cachePre.md5($ctrlDir. $namespace);
 			if (file_exists($cache) && !self::isModify($ctrlDir, $this->cacheDir)) {
 				return unserialize(file_get_contents($cache));
@@ -199,7 +226,6 @@ class Nroute
 		DocParser::setGlobalHandler($this->method, $call);
 		DocParser::setGlobalHandler($this->middleware, $call);
 		foreach ($files as $file) {
-			//$className = $namespace . str_replace(DIRECTORY_SEPARATOR, '\\', str_replace($ctrlDir, '', substr($file, 0, strpos($file, '.'))));
 			$_file = substr($file, 0, strpos($file, '.'));
 			$className = $namespace .'\\' .str_replace(DIRECTORY_SEPARATOR, '\\', $_file);
 			//类不存在直接抛弃
@@ -215,6 +241,7 @@ class Nroute
 				$pattern = $methodDoc->getParam($this->pattern);
 				//没有设置匹配路由的话，直接抛弃
 				if (!$pattern) continue;
+				//自己本身没有设置中间件，会取类的
 				$middleware = $methodDoc->getParam($this->middleware) ?: $classDoc->getParam($this->middleware) ?: array();
 				$r = array(
 					'title' => $methodDoc->getShortDesc(),
@@ -224,18 +251,18 @@ class Nroute
 					'callable' => $className . ':' . $method->getName(),
 					'name' => $methodDoc->getParam($this->name) ?: strtolower(implode($this->dash, explode(DIRECTORY_SEPARATOR, $_file.DIRECTORY_SEPARATOR.$method->name))),
 					'middleware' => $middleware,
-					'subInfo' => []
+					'info' => []
 				);
-				if (!empty($this->sub)) {
-					foreach ($this->sub as $sub) {
-						$r['subInfo'][$sub] = $methodDoc->getParam($sub);
+				if (!empty($this->info)) {
+					foreach ($this->info as $info) {
+						$r['info'][$info] = $methodDoc->getParam($info);
 					}
 				}
 				$data[] = $r;
 			}
 		}
 		//写入缓存缓存
-		if ($this->cacheDir) {
+		if ($useCache && $this->cacheDir) {
 			file_put_contents($cache, serialize($data));
 		}
 		return $data;
