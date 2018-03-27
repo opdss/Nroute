@@ -137,7 +137,7 @@ class Nroute
     public function test(App $app)
     {
         try{
-            return $this->injection($app, $this->getRoutes());
+            return $this->injection($app, $this->getRoutes(true, false));
         } catch (\Exception $e) {
             return false;
         }
@@ -172,11 +172,11 @@ class Nroute
 	 * 获取路由
 	 * @return mixed
 	 */
-	public function getRoutes($getNew = false, $upCache=false)
+	public function getRoutes($getNew = false, $useCache = true)
 	{
 	    if ($getNew || empty($this->_routes)) {
             $maps = $this->_maps;
-            if ($this->forceUseCache) {
+            if ($useCache && $this->forceUseCache) {
                 if (!$this->cacheDir) {
                     throw new \Exception('未设置路由缓存目录');
                 }
@@ -191,7 +191,7 @@ class Nroute
                 }
             } else {
                 foreach ($maps as $k => $v) {
-                    $this->_routes[$k] = $this->readDocRoutes($k, $v, !$getNew);
+                    $this->_routes[$k] = $this->readDocRoutes($k, $v, $useCache);
                 }
             }
         }
