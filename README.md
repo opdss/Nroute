@@ -45,3 +45,9 @@ $config = array('cacheDir'=>CACHE_DIR, 'forceUseCache'=> true);
 ```
 
 /users 路由就会自动读取注册了
+
+forceUseCache参数
+
+forceUseCache参数可以加速路由注册执行的速度，略去了繁琐的文档扫描。
+但是当使用了forceUseCache参数的时候，注册器会检测是否有缓存，有则直接读取，将不再判断扫描是否有更新。
+所以生产环境使用了这个参数的时候，需要更新路由时可以使用forceUpdate() 方法强制扫描刷新路由缓存。

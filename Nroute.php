@@ -119,34 +119,48 @@ class Nroute
 	 * @return bool
 	 * @throws \Exception
 	 */
-	public function register(...$params)
+	public function setCtrl(...$params)
 	{
-		if (strlen($params) != 1) {
-            $this->_maps[$params[0]] = $params[1];
-        } else {
-            $this->_maps = $params[0];
-        }
+		if (count($params) != 1) {
+			$this->_maps[$params[0]] = $params[1];
+		} elseif (is_array($params[0])){
+			$this->_maps = array_merge($this->_maps, $params[0]);
+		}
 		return $this;
 	}
 
+	/**
+	 * 注册路由
+	 * @param App $app
+	 * @param $maps
+	 * @return bool
+	 * @throws \Exception
+	 */
+	public function register(App $app, array $maps)
+	{
+		return $this->setCtrl($maps)->run($app);
+	}
+
+	/**
+	 * 强制更新路由缓存，在forceUseCache=true 的时候使用
+	 * @return mixed
+	 * @throws \Exception
+	 */
 	public function forceUpdate()
-    {
-        return $this;
-    }
+	{
+		return $this->getRoutes(true, false);
+	}
 
-    public function test(App $app)
-    {
-        try{
-            return $this->injection($app, $this->getRoutes(true, false));
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-
+	/**
+	 * 执行映射路由
+	 * @param App $app
+	 * @return bool
+	 * @throws \Exception
+	 */
 	public function run(App $app)
-    {
-        return $this->injection($app, $this->getRoutes());
-    }
+	{
+		return $this->injection($app, $this->getRoutes());
+	}
 
 	/**
 	 * 将路由映射到slim app
@@ -172,30 +186,30 @@ class Nroute
 	 * 获取路由
 	 * @return mixed
 	 */
-	public function getRoutes($getNew = false, $useCache = true)
+	public function getRoutes($forceUpdate = false, $useCache = true)
 	{
-	    if ($getNew || empty($this->_routes)) {
-            $maps = $this->_maps;
-            if ($useCache && $this->forceUseCache) {
-                if (!$this->cacheDir) {
-                    throw new \Exception('未设置路由缓存目录');
-                }
-                $cacheName = $this->cacheDir . $this->cachePre . md5(serialize($maps));
-                if (file_exists($cacheName)) {
-                    $this->_routes = unserialize(file_get_contents($cacheName));
-                } else {
-                    foreach ($maps as $k => $v) {
-                        $this->_routes[$k] = $this->readDocRoutes($k, $v);
-                    }
-                    file_put_contents($cacheName, serialize($this->_routes));
-                }
-            } else {
-                foreach ($maps as $k => $v) {
-                    $this->_routes[$k] = $this->readDocRoutes($k, $v, $useCache);
-                }
-            }
-        }
-		return array_values($this->_routes);
+		if ($forceUpdate || empty($this->_routes)) {
+			$maps = $this->_maps;
+			if ($forceUpdate || $useCache && $this->forceUseCache) {
+				if (!$this->cacheDir) {
+					throw new \Exception('未设置路由缓存目录');
+				}
+				$cacheName = $this->cacheDir . $this->cachePre . md5(serialize($maps));
+				if (!$forceUpdate && file_exists($cacheName)) {
+					$this->_routes = unserialize(file_get_contents($cacheName));
+				} else {
+					foreach ($maps as $k => $v) {
+						$this->_routes = array_merge($this->_routes, $this->readDocRoutes($k, $v));
+					}
+					file_put_contents($cacheName, serialize($this->_routes));
+				}
+			} else {
+				foreach ($maps as $k => $v) {
+					$this->_routes = array_merge($this->_routes, $this->readDocRoutes($k, $v, $useCache));
+				}
+			}
+		}
+		return $this->_routes;
 	}
 
 	/**
