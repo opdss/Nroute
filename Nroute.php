@@ -59,6 +59,7 @@ class Nroute
 	/**
 	 * 强制使用缓存
 	 * 注意更新了注释路由的时候，得把缓存手动删除
+	 * 此值为真的时候，将强制读取上一次上缓存，而不会遍历控制器
 	 * @var bool
 	 */
 	private $forceUseCache = false;
@@ -70,10 +71,22 @@ class Nroute
 	private $cachePre = 'Nroute_';
 
 	/**
-	 * 附属信息，由方法@名称 取得
+	 * 需要获取路由的额外信息的字段，由方法@字段 取得
 	 * @var array
 	 */
-	private $info = array();
+	private $attachInfoFields = array();
+
+	/**
+	 * 全局的中间件
+	 * @var array
+	 */
+	private $globalMiddleware = array();
+
+	/**
+	 * 全局的中间件位置，1先0后
+	 * @var int
+	 */
+	private $globalMiddlewarePosition = 0;
 
 	private $_routes = [];
 
@@ -100,24 +113,39 @@ class Nroute
 	}
 
 	/**
+	 * 设置需要额外获取的字段的名称
 	 * @param $params  string | array
 	 */
-	public function attachInfo($params)
+	public function attachInfoField($params)
 	{
 		if (is_array($params)) {
-			$this->info = array_merge($this->info, $params);
+			$this->attachInfoFields = array_merge($this->attachInfoFields, $params);
 		} else {
-			array_push($this->info, $params);
+			array_push($this->attachInfoFields, $params);
 		}
 		return $this;
 	}
 
 	/**
+	 * 设置全局中间件
+	 * @param $middleware
+	 * @return $this
+	 */
+	public function setGlobalMiddleware($middleware, $globalMiddlewarePosition = 0)
+	{
+		if (is_array($middleware)) {
+			$this->globalMiddleware = array_merge($this->globalMiddleware, $middleware);
+		} else {
+			$this->globalMiddleware[] = $middleware;
+		}
+		$this->globalMiddlewarePosition = $globalMiddlewarePosition;
+		return $this;
+	}
+
+	/**
 	 * 注册路由
-	 * @param App $app
-	 * @param $maps
-	 * @return bool
-	 * @throws \Exception
+	 * @param array ...$params
+	 * @return $this
 	 */
 	public function setCtrl(...$params)
 	{
@@ -143,12 +171,13 @@ class Nroute
 
 	/**
 	 * 强制更新路由缓存，在forceUseCache=true 的时候使用
-	 * @return mixed
+	 * @return $this
 	 * @throws \Exception
 	 */
 	public function forceUpdate()
 	{
-		return $this->getRoutes(true, false);
+		$this->getRoutes(true, false);
+		return $this;
 	}
 
 	/**
@@ -173,8 +202,8 @@ class Nroute
 		foreach ($routes as $route) {
 			$r = $app->map($route['methods'], $route['pattern'], $route['callable'])->setName($route['name']);
 			if (!empty($route['middleware'])) {
-				foreach ($route['middleware'] as $middleware) {
-					class_exists($middleware) AND $r->add($middleware);
+				foreach ($route['middleware'] as $_middleware) {
+					class_exists($_middleware) AND $r->add($_middleware);
 				}
 			}
 		}
@@ -190,7 +219,7 @@ class Nroute
 	{
 		if ($forceUpdate || empty($this->_routes)) {
 			$maps = $this->_maps;
-			if ($forceUpdate || $useCache && $this->forceUseCache) {
+			if ($forceUpdate || ($useCache && $this->forceUseCache)) {
 				if (!$this->cacheDir) {
 					throw new \Exception('未设置路由缓存目录');
 				}
@@ -239,6 +268,7 @@ class Nroute
 		};
 		DocParser::setGlobalHandler($this->method, $call);
 		DocParser::setGlobalHandler($this->middleware, $call);
+		$this->globalMiddleware = is_array($this->globalMiddleware) ? $this->globalMiddleware : [$this->globalMiddleware];
 		foreach ($files as $file) {
 			$_file = substr($file, 0, strpos($file, '.'));
 			$className = $namespace .'\\' .str_replace(DIRECTORY_SEPARATOR, '\\', $_file);
@@ -267,10 +297,13 @@ class Nroute
 					'middleware' => $middleware,
 					'info' => []
 				);
-				if (!empty($this->info)) {
-					foreach ($this->info as $info) {
-						$r['info'][$info] = $methodDoc->getParam($info);
+				if (!empty($this->attachInfoFields)) {
+					foreach ($this->attachInfoFields as $field) {
+						$r['info'][$field] = $methodDoc->getParam($field);
 					}
+				}
+				if (!empty($this->globalMiddleware)) {
+					$r['middleware'] = array_unique($this->globalMiddlewarePosition ? array_merge($r['middleware'], $this->globalMiddleware) : array_merge($this->globalMiddleware, $r['middleware']));
 				}
 				$data[] = $r;
 			}
